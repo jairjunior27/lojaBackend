@@ -1,7 +1,10 @@
 import { Router } from "express";
-import * as control from "../control/control";
-const router = Router();
+import * as controler from "../controller/control";
+import { uploadImg } from "../midleware/upload";
 
-router.post("/cadastro", control.Cadastro);
 
-export default router;
+const route = Router();
+
+route.post("/cadastro", uploadImg.single("imagem"), controler.Cadastro)
+
+export default route;
