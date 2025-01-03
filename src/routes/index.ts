@@ -6,4 +6,5 @@ const route = Router();
 
 route.post("/cadastro", uploadImg.single("imagem"), controler.Cadastro);
 route.post("/login", controler.login);
+route.post("/validatoken", controler.validaToken);
 export default route;

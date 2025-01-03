@@ -58,27 +58,20 @@ export const Cadastro = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const login = async (req: Request, res: Response) => {
+  const email = req.body.email as string;
+  const password = req.body.password as string;
   try {
-    const { email, password }: usuarioType = req.body;
-    if (!email || !password) {
-      res.status(400).json({ msg: "Email e senha são obrigatórios" });
-      return;
-    }
-    console.log("Email:", email); // Verifique se o email está correto
-    console.log("Password:", password); // Verifique se a senha está correta
+    console.log("verifique ", req.body);
+    const user = await prisma.usuario.findUnique({ where: { email } });
 
-    const user = await prisma.usuario.findUnique({
-      where: { email },
-    });
-    console.log("User:", user);
     if (!user) {
-      res.json({ msg: "Credenciais inválidas" });
+      res.status(401).json({ msg: "Credenciais inválidas" });
       return;
     }
 
-    const passwordVerificado = await bcrypt.compare(password, user.password);
-    if (!passwordVerificado) {
-      res.json({ mmsg: "Credenciais inválidas" });
+    const verificaPassword = await bcrypt.compare(password, user.password);
+    if (!verificaPassword) {
+      res.status(401).json({ msg: "Credenciais inválidas" });
       return;
     }
 
@@ -87,16 +80,38 @@ export const login = async (req: Request, res: Response) => {
     });
 
     res.status(200).json({
-      msg: "Login Realizado com Sucesso",
-      status: true,
+      msg: "Login realizado com sucesso",
       userId: user.id,
       token,
+      status: true,
     });
-    console.log(token);
+  } catch (err) {
+    console.error("Erro no servidor:", err);
+    res
+      .status(500)
+      .json({ msg: "Aconteceu um erro no servidor, tente mais tarde" });
+    return;
+  }
+};
+
+export const validaToken = async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    res.status(401).json({ msg: "Token não fornecido" });
+    return;
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    res.status(401).json({ msg: "Token inválido" });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.secret as string);
+    res.json({ user: decoded });
     return;
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Erro no servidor, favor tentar mais tarde" });
+    res.status(401).json({ msg: "Token invalido ou expirado" });
     return;
   }
 };
